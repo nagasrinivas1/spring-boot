@@ -1,0 +1,98 @@
+version: '1.0'
+services:
+    spring-cloud-config-server:
+        container_name: spring-cloud-config-server
+        build:
+            context: .
+            dockerfile: dockerfile
+        image: spring-cloud-config-server:latest
+        expose:
+            - 8888
+        ports:
+            - 8888:8888
+        networks:
+            - trianz-network
+        volumes:
+            - git-service-repo:/var/lib/git-service-repo
+    netflix-eureka-naming-server:
+        container_name: netflix-eureka-naming-server
+        build:
+            context: .
+            dockerfile: dockerfile
+        image: netflix-eureka-naming-server:latest
+        expose:
+            - 8761
+        ports:
+            - 8761:8761
+        networks:
+            - trianz-network
+    currency-conversion-service:
+        container_name: currency-conversion-service
+        build:
+            context: .
+            dockerfile: dockerfile
+        image: currency-conversion-service:latest
+        environment:
+            SPRING_APPLICATION_JSON: '{"spring": {"cloud": {"config": {"uri": "http://spring-cloud-config-server:8888"}}}}'
+        entrypoint: /opt/bin/currency-conversion-service-entrypoint.sh
+        expose:
+            - 8100
+        ports:
+            - 8100:8100
+        networks:
+            - trainz-network
+        links:
+            - spring-cloud-config-server:spring-cloud-config-server
+            - netflix-eureka-naming-server:netflix-eureka-naming-server
+        depends_on:
+            - spring-cloud-config-server
+            - netflix-eureka-naming-server
+        logging:
+            driver: json-file
+    currency-exchange-service:
+        container_name: currency-exchange-service
+        build:
+            context: .
+            dockerfile: dockerfile
+        image: currency-exchange-service:latest
+        environment:
+            SPRING_APPLICATION_JSON: '{"spring": {"cloud": {"config": {"uri": "http://spring-cloud-config-server:8888"}}}}'
+        entrypoint: /opt/bin/EmployeeDashBoard-entrypoint.sh
+        expose:
+            - 8000
+        ports:
+            - 8000:8000
+        networks:
+            - trianz-network
+        links:
+            - spring-cloud-config-server:spring-cloud-config-server
+            - netflix-eureka-naming-server:netflix-eureka-naming-server
+        depends_on:
+            - spring-cloud-config-server
+            - netflix-eureka-naming-server
+        logging:
+            driver: json-file
+    netflix-zuul-api-gateway-server:
+        container_name: netflix-zuul-api-gateway-server
+        build:
+            context: .
+            dockerfile: dockerfile
+        image: netflix-zuul-api-gateway-server:latest
+        expose:
+            - 8765
+        ports:
+            - 8765:8765
+        networks:
+            - trianz-network
+        links:
+            - netflix-eureka-naming-server:netflix-eureka-naming-server
+        depends_on:
+            - netflix-eureka-naming-server
+        logging:
+            driver: json-file
+networks:
+    trianz-network:
+        driver: bridge
+volumes:
+    config-repo:
+        external: true
